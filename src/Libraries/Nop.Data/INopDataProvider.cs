@@ -35,6 +35,10 @@ namespace Nop.Data
         TempDataStorage<TItem> CreateTempDataStorage<TItem>(string storageKey, IQueryable<TItem> query)
             where TItem : class;
 
+        void FullTextDisable();
+
+        void FullTextEnable();
+
         /// <summary>
         /// Initialize database
         /// </summary>
@@ -47,6 +51,8 @@ namespace Nop.Data
         /// <param name="entity">Entity</param>
         /// <returns>Entity</returns>
         TEntity InsertEntity<TEntity>(TEntity entity) where TEntity : BaseEntity;
+
+        bool IsFullTextSupported();
 
         /// <summary>
         /// Updates record in table, using values from entity parameter. 

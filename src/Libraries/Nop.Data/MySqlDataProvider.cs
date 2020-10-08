@@ -16,7 +16,7 @@ using Nop.Core;
 using Nop.Core.Infrastructure;
 using Nop.Data.Migrations;
 
-namespace Nop.Data
+namespace Nop.Data.DataProviders
 {
     public class MySqlNopDataProvider : BaseDataProvider, INopDataProvider
     {
@@ -28,16 +28,6 @@ namespace Nop.Data
         #endregion
 
         #region Utils
-
-        /// <summary>
-        /// Configures the data context
-        /// </summary>
-        /// <param name="dataContext">Data context to configure</param>
-        private void ConfigureDataContext(IDataContext dataContext)
-        {
-            dataContext.MappingSchema.SetDataType(typeof(Guid), new SqlDataType(DataType.NChar, typeof(Guid), 36));
-            dataContext.MappingSchema.SetConvertExpression<string, Guid>(strGuid => new Guid(strGuid));
-        }
 
         protected MySqlConnectionStringBuilder GetConnectionStringBuilder()
         {
@@ -87,21 +77,44 @@ namespace Nop.Data
             ExecuteSqlScript(fileProvider.ReadAllText(filePath, Encoding.Default));
         }
 
-        /// <summary>
-        /// Creates the database connection
-        /// </summary>
-        protected override DataConnection CreateDataConnection()
-        {
-            var dataContext = CreateDataConnection(LinqToDbDataProvider);
-
-            ConfigureDataContext(dataContext);
-
-            return dataContext;
-        }
-
         #endregion
 
         #region Methods
+
+        public bool IsFullTextSupported()
+        {
+            using var currentConnection = CreateDataConnection();
+
+            var databaseName = currentConnection.Connection.Database;
+            
+            return currentConnection.Query<bool?>($@"SELECT True 
+                FROM information_schema.TABLES 
+                WHERE TABLE_SCHEMA = '{databaseName}' AND ENGINE IN ('InnoDB', 'MyISAM')
+                LIMIT 1;").FirstOrDefault() ?? false;
+        }
+
+        public void FullTextDisable()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void FullTextEnable()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Creates the database connection
+        /// </summary>
+        public override DataConnection CreateDataConnection()
+        {
+            var dataContext = CreateDataConnection(LinqToDbDataProvider);
+
+            dataContext.MappingSchema.SetDataType(typeof(Guid), new SqlDataType(DataType.NChar, typeof(Guid), 36));
+            dataContext.MappingSchema.SetConvertExpression<string, Guid>(strGuid => new Guid(strGuid));
+
+            return dataContext;
+        }
 
         /// <summary>
         /// Gets a connection to the database for a current data provider

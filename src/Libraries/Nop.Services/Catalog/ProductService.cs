@@ -703,8 +703,7 @@ namespace Nop.Services.Catalog
                     (productType == null || p.ProductTypeId == (int)productType) &&
                     (showHidden == false || Sql.Between(DateTime.UtcNow, p.AvailableStartDateTimeUtc ?? DateTime.MinValue, p.AvailableEndDateTimeUtc ?? DateTime.MaxValue)) &&
                     (priceMin == null || p.Price >= priceMin) &&
-                    (priceMax == null || p.Price <= priceMax) &&
-                    p.Id > pageSize * pageIndex
+                    (priceMax == null || p.Price <= priceMax)
                 select p;
 
             if(storeId > 0 && _storeService.GetAllStores().Count > 1)

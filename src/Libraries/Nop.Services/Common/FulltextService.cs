@@ -30,7 +30,7 @@ namespace Nop.Services.Common
         /// <returns>Result</returns>
         public virtual bool IsFullTextSupported()
         {
-            return _dataProvider.ExecuteStoredProcedure<bool>("FullText_IsSupported");
+            return _dataProvider.IsFullTextSupported();
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace Nop.Services.Common
         /// </summary>
         public virtual void EnableFullText()
         {
-            _dataProvider.ExecuteStoredProcedure("FullText_Enable");
+            _dataProvider.FullTextEnable();
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Nop.Services.Common
         /// </summary>
         public virtual void DisableFullText()
         {
-            _dataProvider.ExecuteStoredProcedure("FullText_Disable");
+            _dataProvider.FullTextDisable();
         }
 
         #endregion
