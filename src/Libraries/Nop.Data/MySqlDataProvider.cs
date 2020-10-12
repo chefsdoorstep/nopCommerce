@@ -16,7 +16,7 @@ using Nop.Core;
 using Nop.Core.Infrastructure;
 using Nop.Data.Migrations;
 
-namespace Nop.Data.DataProviders
+namespace Nop.Data
 {
     public class MySqlNopDataProvider : BaseDataProvider, INopDataProvider
     {
@@ -28,6 +28,19 @@ namespace Nop.Data.DataProviders
         #endregion
 
         #region Utils
+
+        /// <summary>
+        /// Creates the database connection
+        /// </summary>
+        protected override DataConnection CreateDataConnection()
+        {
+            var dataContext = CreateDataConnection(LinqToDbDataProvider);
+
+            dataContext.MappingSchema.SetDataType(typeof(Guid), new SqlDataType(DataType.NChar, typeof(Guid), 36));
+            dataContext.MappingSchema.SetConvertExpression<string, Guid>(strGuid => new Guid(strGuid));
+
+            return dataContext;
+        }
 
         protected MySqlConnectionStringBuilder GetConnectionStringBuilder()
         {
@@ -86,7 +99,7 @@ namespace Nop.Data.DataProviders
             using var currentConnection = CreateDataConnection();
 
             var databaseName = currentConnection.Connection.Database;
-            
+
             return currentConnection.Query<bool?>($@"SELECT True 
                 FROM information_schema.TABLES 
                 WHERE TABLE_SCHEMA = '{databaseName}' AND ENGINE IN ('InnoDB', 'MyISAM')
@@ -101,19 +114,6 @@ namespace Nop.Data.DataProviders
         public void FullTextEnable()
         {
             throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Creates the database connection
-        /// </summary>
-        public override DataConnection CreateDataConnection()
-        {
-            var dataContext = CreateDataConnection(LinqToDbDataProvider);
-
-            dataContext.MappingSchema.SetDataType(typeof(Guid), new SqlDataType(DataType.NChar, typeof(Guid), 36));
-            dataContext.MappingSchema.SetConvertExpression<string, Guid>(strGuid => new Guid(strGuid));
-
-            return dataContext;
         }
 
         /// <summary>
