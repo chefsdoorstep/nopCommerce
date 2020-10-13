@@ -9,10 +9,20 @@ using LinqToDB.Data;
 namespace Nop.Data.DataProviders
 {
     //TODO: IDisposeAsync https://docs.microsoft.com/ru-ru/dotnet/standard/garbage-collection/implementing-disposeasync
+    /// <summary>
+    /// Represents temporary storage
+    /// </summary>
+    /// <typeparam name="T">Storage record mapping class</typeparam>
     public class TempDataStorage<T> : IQueryable<T>, IDisposable where T : class
     {
+        #region Fields
+
         private readonly IDisposable _disposableFactory;
         private readonly IDisposable _disposableResource;
+
+        #endregion
+
+        #region Ctor
 
         public TempDataStorage(string storageName, IQueryable<T> query, Func<DataConnection> dataConnectionFactory)
         {
@@ -34,11 +44,9 @@ namespace Nop.Data.DataProviders
             _disposableFactory = dataConnection;
         }
 
-        public Type ElementType { get; }
+        #endregion
 
-        public Expression Expression { get; }
-
-        public IQueryProvider Provider { get; }
+        #region Methods
 
         public void Dispose()
         {
@@ -55,5 +63,17 @@ namespace Nop.Data.DataProviders
         {
             throw new NotImplementedException();
         }
+
+        #endregion
+
+        #region Properties
+
+        public Type ElementType { get; }
+
+        public Expression Expression { get; }
+
+        public IQueryProvider Provider { get; }
+
+        #endregion
     }
 }

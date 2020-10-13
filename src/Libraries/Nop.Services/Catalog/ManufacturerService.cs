@@ -267,6 +267,12 @@ namespace Nop.Services.Catalog
             _productManufacturerRepository.Delete(productManufacturer);
         }
 
+        /// <summary>
+        /// Gets featured products by manufacturer identifier
+        /// </summary>
+        /// <param name="manufacturerId">Manufacturer identifier</param>
+        /// <param name="storeId">Store identifier; 0 if you want to get all records</param>
+        /// <returns>List of featured products</returns>
         public virtual IList<Product> GetFeaturedProducts(int manufacturerId, int storeId = 0)
         {
             var allowedCustomerRolesIds = string.Join(",", _customerService.GetCustomerRoleIds(_workContext.CurrentCustomer));

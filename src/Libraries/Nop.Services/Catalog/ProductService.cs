@@ -494,6 +494,11 @@ namespace Nop.Services.Catalog
             return result;
         }
 
+        /// <summary>
+        /// Gets products which marked as new
+        /// </summary>
+        /// <param name="storeId">Store identifier; 0 if you want to get all records</param>
+        /// <returns>List of new products</returns>
         public virtual IList<Product> GetProductsMarkedAsNew(int storeId = 0)
         {
             var customerRolesIds = _customerService.GetCustomerRoleIds(_workContext.CurrentCustomer);
