@@ -743,19 +743,7 @@ namespace Nop.Services.Catalog
             {
                 IQueryable<int> productsByKeywords;
 
-                if (_commonSettings.UseFullTextSearch)
-                {
-                    productsByKeywords = from p in _productRepository.Table
-                        where Sql.Ext.FullTextSearch(_commonSettings.FullTextMode, keywords, p.Name) ||
-                        (searchDescriptions && Sql.Ext.FullTextSearch(_commonSettings.FullTextMode, keywords, p.ShortDescription, p.FullDescription)) ||
-                        (searchManufacturerPartNumber && p.ManufacturerPartNumber == keywords) ||
-                        (searchSku && p.Sku == keywords)
-                        select p.Id;
-
-                }
-                else
-                {
-                    productsByKeywords =
+                productsByKeywords =
                         from p in _productRepository.Table
                         where p.Name.Contains(keywords) ||
                             (searchDescriptions &&
@@ -763,7 +751,6 @@ namespace Nop.Services.Catalog
                             (searchManufacturerPartNumber && p.ManufacturerPartNumber == keywords) ||
                             (searchSku && p.Sku == keywords)
                         select p.Id;
-                }
 
                 if (searchProductTags)
                 {

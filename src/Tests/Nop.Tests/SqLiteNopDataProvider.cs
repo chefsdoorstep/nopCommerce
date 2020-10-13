@@ -398,21 +398,6 @@ namespace Nop.Tests
             throw new NotImplementedException();
         }
 
-        public void FullTextDisable()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void FullTextEnable()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool IsFullTextSupported()
-        {
-            return false;
-        }
-
         #endregion
 
         #region Properties

@@ -73,26 +73,6 @@ namespace Nop.Data
 
         #region Methods
 
-        public bool IsFullTextSupported()
-        {
-            using var currentConnection = CreateDataConnection();
-            
-            // We stop using IsFulltextEnabled property:
-            // The value of this property now has no effect. User databases are always enabled for full-text search. A future release of SQL Server will remove this property. Do not use this property in new development work, and modify applications that currently use this property as soon as possible.
-            // https://docs.microsoft.com/en-us/sql/t-sql/functions/databasepropertyex-transact-sql?view=sqlallproducts-allversions
-            return currentConnection.Query<bool>($@"SELECT FULLTEXTSERVICEPROPERTY('IsFullTextInstalled')").FirstOrDefault();
-        }
-
-        public void FullTextDisable()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void FullTextEnable()
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// Gets a connection to the database for a current data provider
         /// </summary>

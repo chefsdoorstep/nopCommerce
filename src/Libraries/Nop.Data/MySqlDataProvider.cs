@@ -94,28 +94,6 @@ namespace Nop.Data
 
         #region Methods
 
-        public bool IsFullTextSupported()
-        {
-            using var currentConnection = CreateDataConnection();
-
-            var databaseName = currentConnection.Connection.Database;
-
-            return currentConnection.Query<bool?>($@"SELECT True 
-                FROM information_schema.TABLES 
-                WHERE TABLE_SCHEMA = '{databaseName}' AND ENGINE IN ('InnoDB', 'MyISAM')
-                LIMIT 1;").FirstOrDefault() ?? false;
-        }
-
-        public void FullTextDisable()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void FullTextEnable()
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// Gets a connection to the database for a current data provider
         /// </summary>
