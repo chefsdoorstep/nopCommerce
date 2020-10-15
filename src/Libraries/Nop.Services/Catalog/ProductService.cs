@@ -399,35 +399,31 @@ namespace Nop.Services.Catalog
         {
             List<Product> featuredProducts = new List<Product>();
 
-            if(categoryId == 0)
-                return featuredProducts;            
+            if (categoryId == 0)
+                return featuredProducts;
 
-            var customerRolesIds = _customerService.GetCustomerRoleIds(_workContext.CurrentCustomer);
+            var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoryFeaturedProductsIdsKey, categoryId, storeId);
 
-            var countStores = _storeService.GetAllStores().Count;
-            var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoryFeaturedProductsIdsKey, categoryId,  storeId, customerRolesIds);
-
-            var featuredProductIds = _staticCacheManager.Get(cacheKey, () => {
-                
-                featuredProducts = (from p in _productRepository.Table
-                    join pc in _productCategoryRepository.Table on p.Id equals pc.ProductId
-                    where p.VisibleIndividually && pc.IsFeaturedProduct && categoryId == pc.CategoryId &&
-                    (
-                        (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, customerRolesIds)) &&
-                        (storeId == 0 || countStores > 1 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
-                    )
-                    select p).ToList();
-
-                return featuredProducts.Select(p => p.Id);
-
-            });
-
-            if(featuredProducts.Count == 0 && featuredProductIds?.Count() > 0)
+            var featuredProductIds = _staticCacheManager.Get(cacheKey, () =>
             {
-                return _productRepository.Table
-                    .Where(p => featuredProductIds.Contains(p.Id))
-                    .ToList();
-            }
+                featuredProducts = (from p in _productRepository.Table
+                                    join pc in _productCategoryRepository.Table on p.Id equals pc.ProductId
+                                    where p.VisibleIndividually && pc.IsFeaturedProduct && categoryId == pc.CategoryId &&
+                                    (storeId == 0 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                                    select p).ToList();
+
+                return featuredProducts.Select(p => (p.Id, p.SubjectToAcl));
+            }).Cast<(int EntityId, bool SubjectToAcl)>();
+
+            if (featuredProducts.Count > 0)
+                return featuredProducts.Where(p => _aclService.Authorize(p)).ToList();
+
+            var authorizedIds = featuredProductIds.Where(fp =>
+                    _aclService.Authorize(new Product { Id = fp.EntityId, SubjectToAcl = fp.SubjectToAcl }, _workContext.CurrentCustomer))
+                    .Select(fp => fp.EntityId);
+
+            if (authorizedIds?.Count() > 0)
+                return _productRepository.Table.Where(p => authorizedIds.Contains(p.Id)).ToList();
 
             return featuredProducts;
         }
@@ -504,14 +500,14 @@ namespace Nop.Services.Catalog
             var customerRolesIds = _customerService.GetCustomerRoleIds(_workContext.CurrentCustomer);
 
             var query = from p in _productRepository.Table
-                    where p.VisibleIndividually && p.MarkAsNew &&
-                    Sql.Between(DateTime.UtcNow, p.MarkAsNewStartDateTimeUtc ?? DateTime.MinValue, p.MarkAsNewEndDateTimeUtc ?? DateTime.MaxValue) &&
-                    (
-                        (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, customerRolesIds)) &&
-                        (storeId == 0 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
-                    )
-                    select p;
-            
+                        where p.VisibleIndividually && p.MarkAsNew &&
+                        Sql.Between(DateTime.UtcNow, p.MarkAsNewStartDateTimeUtc ?? DateTime.MinValue, p.MarkAsNewEndDateTimeUtc ?? DateTime.MaxValue) &&
+                        (
+                            (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, customerRolesIds)) &&
+                            (storeId == 0 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                        )
+                        select p;
+
             query = query
                 .Take(_catalogSettings.NewProductsNumber)
                 .OrderBy(ProductSortingEnum.CreatedOn);
@@ -526,13 +522,13 @@ namespace Nop.Services.Catalog
             var customerRolesIds = _customerService.GetCustomerRoleIds(_workContext.CurrentCustomer);
 
             var products = from p in _productRepository.Table
-                orderby p.DisplayOrder, p.Id
-                where p.Published && !p.Deleted && p.VisibleIndividually &&
-                (
-                    (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, customerRolesIds)) &&
-                    (storeId == 0 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
-                )
-                select p;
+                           orderby p.DisplayOrder, p.Id
+                           where p.Published && !p.Deleted && p.VisibleIndividually &&
+                           (
+                               (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, customerRolesIds)) &&
+                               (storeId == 0 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                           )
+                           select p;
 
             return products.ToList();
         }
@@ -601,7 +597,7 @@ namespace Nop.Services.Catalog
                 searchProductTags, languageId, filteredSpecs,
                 orderBy, showHidden, overridePublished);
         }
-        
+
         /// <summary>
         /// Search products
         /// </summary>
@@ -711,25 +707,25 @@ namespace Nop.Services.Catalog
                     (priceMax == null || p.Price <= priceMax)
                 select p;
 
-            if(storeId > 0 && _storeService.GetAllStores().Count > 1)
+            if (storeId > 0 && _storeService.GetAllStores().Count > 1)
             {
                 productsQuery = from p in productsQuery
-                    where (storeId == 0 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
-                    select p;
+                                where (storeId == 0 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                                select p;
             }
 
 
             if (!overridePublished.HasValue && !showHidden)
             {
                 productsQuery = from p in productsQuery
-                    where p.Published
-                    select p;
+                                where p.Published
+                                select p;
             }
             else if (overridePublished.HasValue)
             {
                 productsQuery = from p in productsQuery
-                    where p.Published == overridePublished
-                    select p;
+                                where p.Published == overridePublished
+                                select p;
             }
 
             if (!showHidden)
@@ -738,9 +734,9 @@ namespace Nop.Services.Catalog
                 var allowedCustomerRolesIds = _customerService.GetCustomerRoleIds(_workContext.CurrentCustomer);
 
                 productsQuery = from p in productsQuery
-                    where !p.SubjectToAcl || allowedCustomerRolesIds == null ||
-                        (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, allowedCustomerRolesIds))
-                    select p;
+                                where !p.SubjectToAcl || allowedCustomerRolesIds == null ||
+                                    (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, allowedCustomerRolesIds))
+                                select p;
             }
 
 
@@ -795,51 +791,51 @@ namespace Nop.Services.Catalog
                         );
 
                 productsQuery = from p in productsQuery
-                    from pbk in productsByKeywords.InnerJoin(pbk => pbk == p.Id)
-                    select p;
+                                from pbk in productsByKeywords.InnerJoin(pbk => pbk == p.Id)
+                                select p;
             }
 
             if (categoryIds?.Count > 0)
             {
                 productsQuery = from p in productsQuery
-                    join pc in _productCategoryRepository.Table on p.Id equals pc.ProductId
-                    where categoryIds.Contains(pc.CategoryId) &&
-                        (!excludeFeaturedProducts || !pc.IsFeaturedProduct)
-                    select p;
+                                join pc in _productCategoryRepository.Table on p.Id equals pc.ProductId
+                                where categoryIds.Contains(pc.CategoryId) &&
+                                    (!excludeFeaturedProducts || !pc.IsFeaturedProduct)
+                                select p;
             }
 
             if (manufacturerId > 0)
             {
                 productsQuery = from p in productsQuery
-                    join pmm in _productManufacturerRepository.Table on p.Id equals pmm.ProductId
-                    where pmm.Id == manufacturerId &&
-                        (!excludeFeaturedProducts || !pmm.IsFeaturedProduct)
-                    select p;
+                                join pmm in _productManufacturerRepository.Table on p.Id equals pmm.ProductId
+                                where pmm.Id == manufacturerId &&
+                                    (!excludeFeaturedProducts || !pmm.IsFeaturedProduct)
+                                select p;
             }
 
             if (productTagId > 0)
             {
                 productsQuery = from p in productsQuery
-                    join ptm in _productTagMappingRepository.Table on p.Id equals ptm.ProductId
-                    where ptm.ProductTagId == productTagId
-                    select p;
+                                join ptm in _productTagMappingRepository.Table on p.Id equals ptm.ProductId
+                                where ptm.ProductTagId == productTagId
+                                select p;
             }
 
             if (filteredSpecs?.Count > 0)
             {
                 productsQuery = from p in productsQuery
-                    where _productSpecificationAttributeRepository.Table
-                        .Any(psa => filteredSpecs.Contains(psa.SpecificationAttributeOptionId))
-                    select p;
+                                where _productSpecificationAttributeRepository.Table
+                                    .Any(psa => filteredSpecs.Contains(psa.SpecificationAttributeOptionId))
+                                select p;
             }
 
             filterableSpecificationAttributeOptionIds = new List<int>();
-            if(loadFilterableSpecificationAttributeOptionIds)
+            if (loadFilterableSpecificationAttributeOptionIds)
             {
-                filterableSpecificationAttributeOptionIds = 
+                filterableSpecificationAttributeOptionIds =
                     (from psam in _productSpecificationAttributeRepository.Table
-                    where psam.AllowFiltering && productsQuery.Any(p => p.Id == psam.ProductId)
-                    select psam.SpecificationAttributeOptionId).ToList();
+                     where psam.AllowFiltering && productsQuery.Any(p => p.Id == psam.ProductId)
+                     select psam.SpecificationAttributeOptionId).ToList();
             }
 
             return new PagedList<Product>(productsQuery.OrderBy(orderBy), pageIndex, pageSize);
