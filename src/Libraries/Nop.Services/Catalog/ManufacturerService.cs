@@ -35,7 +35,7 @@ namespace Nop.Services.Catalog
         private readonly IRepository<StoreMapping> _storeMappingRepository;
         private readonly IStaticCacheManager _staticCacheManager;
         private readonly IStoreContext _storeContext;
-        protected readonly IStoreService _storeService;
+        protected readonly IStoreMappingService _storeMappingService;
         private readonly IWorkContext _workContext;
 
         #endregion
@@ -53,7 +53,7 @@ namespace Nop.Services.Catalog
             IRepository<StoreMapping> storeMappingRepository,
             IStaticCacheManager staticCacheManager,
             IStoreContext storeContext,
-            IStoreService storeService,
+            IStoreMappingService storeMappingService,
             IWorkContext workContext)
         {
             _catalogSettings = catalogSettings;
@@ -67,7 +67,7 @@ namespace Nop.Services.Catalog
             _storeMappingRepository = storeMappingRepository;
             _staticCacheManager = staticCacheManager;
             _storeContext = storeContext;
-            _storeService = storeService;
+            _storeMappingService = storeMappingService;
             _workContext = workContext;
         }
 
@@ -281,7 +281,7 @@ namespace Nop.Services.Catalog
         /// <param name="manufacturerId">Manufacturer identifier</param>
         /// <param name="storeId">Store identifier; 0 if you want to get all records</param>
         /// <returns>List of featured products</returns>
-        public virtual IList<Product> GetFeaturedProducts(int manufacturerId, int storeId = 0)
+        public virtual IList<Product> GetManufacturerFeaturedProducts(int manufacturerId, int storeId = 0)
         {
             List<Product> featuredProducts = new List<Product>();
 
@@ -289,13 +289,15 @@ namespace Nop.Services.Catalog
                 return featuredProducts;
 
             var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.ManufacturerFeaturedProductIdsKey, manufacturerId, storeId);
-            
+
             var featuredProductIds = _staticCacheManager.Get(cacheKey, () =>
             {
+                var skipSroreMapping = storeId == 0 || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
+
                 featuredProducts = (from p in _productRepository.Table
                                     join pm in _productManufacturerRepository.Table on p.Id equals pm.ProductId
                                     where p.VisibleIndividually && pm.IsFeaturedProduct && manufacturerId == pm.ManufacturerId &&
-                                    (storeId == 0 || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                                    (skipSroreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
                                     select p).ToList();
 
                 return featuredProducts.Select(p => (p.Id, p.SubjectToAcl));

@@ -41,7 +41,7 @@ namespace Nop.Services.Catalog
         /// <param name="manufacturerId">Manufacturer identifier</param>
         /// <param name="storeId">Store identifier; 0 if you want to get all records</param>
         /// <returns>List of featured products</returns>
-        IList<Product> GetFeaturedProducts(int manufacturerId, int storeId = 0);
+        IList<Product> GetManufacturerFeaturedProducts(int manufacturerId, int storeId = 0);
 
         /// <summary>
         /// Gets all manufacturers
