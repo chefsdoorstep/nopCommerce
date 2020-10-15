@@ -395,6 +395,12 @@ namespace Nop.Services.Catalog
             _productRepository.Update(products);
         }
 
+        /// <summary>
+        /// Gets featured products by a category identifier
+        /// </summary>
+        /// <param name="categoryId">Category identifier</param>
+        /// <param name="storeId">Store identifier; 0 if you want to get all records</param>
+        /// <returns>List of featured products</returns>
         public virtual IList<Product> GetCategoryFeaturedProducts(int categoryId, int storeId = 0)
         {
             List<Product> featuredProducts = new List<Product>();

@@ -39,7 +39,7 @@ namespace Nop.Data
         /// <param name="query">Query to get records to populate created storage with initial data</param>
         /// <typeparam name="TItem">Storage record mapping class</typeparam>
         /// <returns>IQueryable instance of temporary storage</returns>
-        TempDataStorage<TItem> CreateTempDataStorage<TItem>(string storageKey, IQueryable<TItem> query)
+        ITempDataStorage<TItem> CreateTempDataStorage<TItem>(string storageKey, IQueryable<TItem> query)
             where TItem : class;
 
         /// <summary>
