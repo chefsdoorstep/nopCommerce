@@ -415,7 +415,7 @@ namespace Nop.Services.Catalog
             {
                 featuredProducts = (from p in _productRepository.Table
                                     join pc in _productCategoryRepository.Table on p.Id equals pc.ProductId
-                                    where p.VisibleIndividually && pc.IsFeaturedProduct && categoryId == pc.CategoryId &&
+                                    where !p.Deleted && p.Published && p.VisibleIndividually && pc.IsFeaturedProduct && categoryId == pc.CategoryId &&
                                     (skipSroreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
                                     select p).ToList();
 
@@ -501,7 +501,7 @@ namespace Nop.Services.Catalog
             var skipSroreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
 
             var query = from p in _productRepository.Table
-                        where p.VisibleIndividually && p.MarkAsNew &&
+                        where p.VisibleIndividually && p.MarkAsNew && !p.Deleted && p.Published &&
                         Sql.Between(DateTime.UtcNow, p.MarkAsNewStartDateTimeUtc ?? DateTime.MinValue, p.MarkAsNewEndDateTimeUtc ?? DateTime.MaxValue) &&
                         (
                             (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, customerRolesIds)) &&

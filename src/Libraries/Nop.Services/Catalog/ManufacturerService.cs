@@ -286,7 +286,7 @@ namespace Nop.Services.Catalog
 
                 featuredProducts = (from p in _productRepository.Table
                                     join pm in _productManufacturerRepository.Table on p.Id equals pm.ProductId
-                                    where p.VisibleIndividually && pm.IsFeaturedProduct && manufacturerId == pm.ManufacturerId &&
+                                    where !p.Deleted && p.Published && p.VisibleIndividually && pm.IsFeaturedProduct && manufacturerId == pm.ManufacturerId &&
                                     (skipSroreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
                                     select p).ToList();
 
