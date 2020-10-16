@@ -409,14 +409,14 @@ namespace Nop.Services.Catalog
                 return featuredProducts;
 
             var cacheKey = _staticCacheManager.PrepareKeyForDefaultCache(NopCatalogDefaults.CategoryFeaturedProductsIdsKey, categoryId, storeId);
-            var skipSroreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
+            var skipStoreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
 
             var featuredProductIds = _staticCacheManager.Get(cacheKey, () =>
             {
                 featuredProducts = (from p in _productRepository.Table
                                     join pc in _productCategoryRepository.Table on p.Id equals pc.ProductId
                                     where !p.Deleted && p.Published && p.VisibleIndividually && pc.IsFeaturedProduct && categoryId == pc.CategoryId &&
-                                    (skipSroreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                                    (skipStoreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
                                     select p).ToList();
 
                 return featuredProducts.Select(p => (p.Id, p.SubjectToAcl));
@@ -498,14 +498,14 @@ namespace Nop.Services.Catalog
         public virtual IList<Product> GetProductsMarkedAsNew(int storeId = 0)
         {
             var customerRolesIds = _customerService.GetCustomerRoleIds(_workContext.CurrentCustomer);
-            var skipSroreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
+            var skipStoreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
 
             var query = from p in _productRepository.Table
                         where p.VisibleIndividually && p.MarkAsNew && !p.Deleted && p.Published &&
                         Sql.Between(DateTime.UtcNow, p.MarkAsNewStartDateTimeUtc ?? DateTime.MinValue, p.MarkAsNewEndDateTimeUtc ?? DateTime.MaxValue) &&
                         (
                             (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, customerRolesIds)) &&
-                            (skipSroreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                            (skipStoreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
                         )
                         select p;
 
@@ -521,14 +521,14 @@ namespace Nop.Services.Catalog
         public virtual IList<Product> GetProductsVisibleIndividually(int storeId)
         {
             var customerRolesIds = _customerService.GetCustomerRoleIds(_workContext.CurrentCustomer);
-            var skipSroreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
+            var skipStoreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
 
             var products = from p in _productRepository.Table
                            orderby p.DisplayOrder, p.Id
                            where p.Published && !p.Deleted && p.VisibleIndividually &&
                            (
                                (_catalogSettings.IgnoreAcl || p.SubjectToAcl(_aclRepository.Table, customerRolesIds)) &&
-                               (skipSroreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                               (skipStoreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
                            )
                            select p;
 

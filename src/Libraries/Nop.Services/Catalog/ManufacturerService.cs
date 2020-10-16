@@ -282,12 +282,12 @@ namespace Nop.Services.Catalog
 
             var featuredProductIds = _staticCacheManager.Get(cacheKey, () =>
             {
-                var skipSroreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
+                var skipStoreMapping = _catalogSettings.IgnoreStoreLimitations || !_storeMappingService.IsEntityMappingExists<Product>(storeId);
 
                 featuredProducts = (from p in _productRepository.Table
                                     join pm in _productManufacturerRepository.Table on p.Id equals pm.ProductId
                                     where !p.Deleted && p.Published && p.VisibleIndividually && pm.IsFeaturedProduct && manufacturerId == pm.ManufacturerId &&
-                                    (skipSroreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
+                                    (skipStoreMapping || p.LimitedToStores(_storeMappingRepository.Table, storeId))
                                     select p).ToList();
 
                 return featuredProducts.Select(p => (p.Id, p.SubjectToAcl));
